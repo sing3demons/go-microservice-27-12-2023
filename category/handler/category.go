@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"os"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sing3demons/category/model"
 	"github.com/sing3demons/category/service"
+	"github.com/sing3demons/category/utils"
 )
 
 type CategoryHandler interface {
@@ -41,7 +43,7 @@ func (h *categoryHandler) FindByID(c *gin.Context) {
 		})
 	}
 
-	limit := c.DefaultQuery("limit", "100")
+	limit := c.DefaultQuery("limit", "1000")
 	limitInt, err := strconv.Atoi(limit)
 	if err != nil {
 		limitInt = 100
@@ -54,12 +56,14 @@ func (h *categoryHandler) FindByID(c *gin.Context) {
 	}
 
 	if len(category.Products) > 0 {
+		host := os.Getenv("PRODUCT_SERVICE_URL")
 		products := []model.Products{}
 		for i, product := range category.Products {
 			products = append(products, model.Products{
 				Type: "products",
 				ID:   product.ID,
 				Name: product.Name,
+				Href: utils.Href(host, "products", product.ID),
 			})
 
 			if i == limitInt {
