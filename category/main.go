@@ -13,6 +13,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/sing3demons/category/handler"
+	"github.com/sing3demons/category/repository"
+	"github.com/sing3demons/category/service"
 )
 
 func init() {
@@ -37,17 +40,20 @@ func main() {
 		panic(err)
 	}
 
-	// InitSeed(connect)
 	col := connect.Database("category").Collection("category")
-	_ = col
+
+	repo := repository.NewCategoryRepository(col)
+	svc := service.NewCategoryService(repo)
+	controller := handler.NewCategoryHandler(svc)
 
 	r := gin.Default()
 
 	r.GET("/healthz", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-		})
+		c.Status(http.StatusOK)
 	})
+
+	r.GET("/category", controller.FindAll)
+	r.GET("/category/:id", controller.FindByID)
 
 	runServer("category", r)
 }

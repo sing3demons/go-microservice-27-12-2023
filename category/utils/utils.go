@@ -6,7 +6,7 @@ import (
 )
 
 func HostName(name, id string) string {
-	host := os.Getenv("PRODUCT_SERVICE_URL")
+	host := os.Getenv("CATEGORY_SERVICE_URL")
 	return host + "/" + (name) + "/" + id
 }
 
