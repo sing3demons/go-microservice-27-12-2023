@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: products
+  namespace: ms-service
+spec:
+  selector:
+    matchLabels:
+      app: products
+  template:
+    metadata:
+      labels:
+        app: products
+    spec:
+      containers:
+        - name: products
+          image: sing3demons/go-service-products:1.0.1
+          imagePullPolicy: Always
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 4
+          livenessProbe:
+            exec:
+              command:
+                - cat
+                - /tmp/live
+            initialDelaySeconds: 5
+            periodSeconds: 30
+            timeoutSeconds: 30
+            failureThreshold: 5
+          env:
+            - name: PORT
+              value: "8080"
+            - name: ZONE
+              value: PROD
+            - name: GIN_MODE
+              value: release
+            - name: MONGO_URL
+              value: "mongodb://mongo:27017/?replicaSet=rs0"
+            - name: API_GATEWAY_URL
+              value: http://localhost:8000/api
+            - name: PRODUCT_SERVICE_URL
+              value: http://localhost:8080
+            - name: PRODUCT_LANGUAGE_SERVICE_URL
+              value: http://localhost:8081
+            - name: CATEGORY_SERVICE_URL
+              value: http://localhost:8082
+          resources:
+            requests:
+              cpu: "500m"
+          ports:
+            - containerPort: 8080
+

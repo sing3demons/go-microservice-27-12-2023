@@ -42,7 +42,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	// InitSeed(connect)
+	if os.Getenv("ZONE") == "SEED" {
+		InitSeed(connect, 1000)
+	}
 
 	// broker := os.Getenv("KAFKA_BROKERS")
 	// kafkaBrokers := strings.Split(broker, ",")

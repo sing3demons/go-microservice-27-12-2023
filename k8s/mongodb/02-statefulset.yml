@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo
+  namespace: ms-service
+spec:
+  selector:
+    matchLabels:
+      app: mongo
+  serviceName: "mongo"
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: mongo
+        image: mongo
+        command: 
+        - mongod 
+        - "--bind_ip_all"
+        - "--replSet"
+        - rs0
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - name: mongo-db
+          mountPath: /data/db
+  volumeClaimTemplates:
+  - metadata:
+      name: mongo-db
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+
+# kubectl exec -it mongo-0 -n mongo -- mongosh 
+# rs.initiate({_id: "rs0",members: [{ _id: 0, host: "mongo-0.mongo:27017" },{ _id: 1, host: "mongo-1.mongo:27017" },{ _id: 2, host: "mongo-2.mongo:27017" },]})
+
+
+# kubectl exec -it mongo-0 -n ms-service -- mongosh --eval 'rs.initiate({_id: "rs0", members: [{ _id: 0, host: "mongo-0.mongo:27017" },{ _id: 1, host: "mongo-1.mongo:27017" },{ _id: 2, host: "mongo-2.mongo:27017" }]})'
+
+# kubectl exec -it mongo-0 -n mongo -- /bin/bash > cat /etc/hosts

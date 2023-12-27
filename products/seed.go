@@ -27,7 +27,7 @@ func RandomNanoID(size int) string {
 	return id
 }
 
-func InitSeed(db *mongo.Client) {
+func InitSeed(db *mongo.Client, count int) {
 	seed := Seed{db: db}
 
 	categoryDB := db.Database("category").Collection("category")
@@ -74,7 +74,7 @@ func InitSeed(db *mongo.Client) {
 		return
 	} else {
 		start := time.Now()
-		for i := 0; i < 9312; i++ {
+		for i := 0; i < count; i++ {
 			var randomCategory []model.Category
 			random := rand.Intn(len(categories))
 			for i := 0; i < random; i++ {
