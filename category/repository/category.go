@@ -2,9 +2,12 @@ package repository
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/sing3demons/category/model"
+	"github.com/sing3demons/category/utils"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -42,16 +45,24 @@ func (c *categoryRepository) FindAll() ([]model.Category, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	host := os.Getenv("CATEGORY_SERVICE_URL")
 	for cur.Next(ctx) {
 		var category model.Category
 		err := cur.Decode(&category)
 		if err != nil {
 			return nil, err
 		}
-
+		category.Href = utils.Href(host, category.Type, category.ID)
 		categories = append(categories, category)
 	}
+
+	logrus.WithFields(logrus.Fields{
+		"RESULT": categories,
+		"TYPE":   "FIND_ALL",
+		"COUNT":  len(categories),
+		"FILTER": filter,
+		"OPTS":   opts,
+	}).Info("Find all categories")
 
 	return categories, nil
 }
@@ -73,4 +84,32 @@ func (c *categoryRepository) FindByID(id string) (*model.Category, error) {
 	}
 
 	return &category, nil
+}
+
+func (c *categoryRepository) Delete(id string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{
+		"id":         id,
+		"deleteDate": primitive.Null{},
+	}
+
+	loc, _ := time.LoadLocation("Asia/Bangkok")
+	update := bson.M{
+		"deleteDate": time.Now().In(loc),
+	}
+
+	updateResult, err := c.db.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"ID":     id,
+		"RESULT": updateResult,
+		"TYPE":   "DELETE",
+	}).Info("Delete category")
+
+	return nil
 }

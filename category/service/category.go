@@ -27,14 +27,7 @@ func (c *categoryService) FindAll() ([]model.Category, error) {
 		return nil, err
 	}
 
-	result := []model.Category{}
-
-	host := os.Getenv("CATEGORY_SERVICE_URL")
-	for _, category := range categories {
-		category.Href = utils.Href(host, category.Type, category.ID)
-		result = append(result, category)
-	}
-	return result, nil
+	return categories, nil
 }
 
 func (c *categoryService) FindByID(id string) (*model.Category, error) {

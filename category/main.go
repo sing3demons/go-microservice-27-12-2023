@@ -1,24 +1,37 @@
 package main
 
 import (
-	"context"
-	"errors"
-	"fmt"
-	"log"
-	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
+	"os/exec"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/sing3demons/category/handler"
 	"github.com/sing3demons/category/repository"
 	"github.com/sing3demons/category/service"
+	"github.com/sing3demons/category/store"
+	log "github.com/sirupsen/logrus"
 )
 
+func runCMD(cmd string, shell bool) []byte {
+	if shell {
+		out, err := exec.Command("bash", "-c", cmd).Output()
+		if err != nil {
+			log.Fatal(err)
+			panic("some error found")
+		}
+		return out
+	}
+	out, err := exec.Command(cmd).Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return out
+}
+
 func init() {
+
 	if os.Getenv("ZONE") == "PROD" {
 		gin.SetMode(gin.ReleaseMode)
 	} else {
@@ -26,65 +39,35 @@ func init() {
 			panic(err)
 		}
 	}
+
+	// setup logrus
+	logLevel, err := log.ParseLevel(os.Getenv("LOG_LEVEL"))
+	if err != nil {
+		logLevel = log.InfoLevel
+	}
+
+	log.SetLevel(logLevel)
+	log.SetFormatter(&log.JSONFormatter{})
+
 }
 
 func main() {
 	_, err := os.Create("/tmp/live")
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
+		os.Exit(1)
 	}
 	defer os.Remove("/tmp/live")
 
-	connect, err := NewMongo()
-	if err != nil {
-		panic(err)
-	}
-
-	col := connect.Database("category").Collection("category")
-
+	col := store.NewStore().Client.Database("category").Collection("category")
 	repo := repository.NewCategoryRepository(col)
 	svc := service.NewCategoryService(repo)
 	controller := handler.NewCategoryHandler(svc)
 
-	r := gin.Default()
-
-	r.GET("/healthz", func(c *gin.Context) {
-		c.Status(http.StatusOK)
-	})
+	r := NewHttpServer()
 
 	r.GET("/category", controller.FindAll)
 	r.GET("/category/:id", controller.FindByID)
 
-	runServer("category", r)
-}
-
-func runServer(serviceName string, router http.Handler) {
-	addr := os.Getenv("PORT")
-	srv := &http.Server{
-		Addr:    ":" + addr,
-		Handler: router,
-	}
-
-	go func() {
-		fmt.Printf("[%s] http listen: %s\n", serviceName, srv.Addr)
-
-		if err := srv.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
-			fmt.Printf("server listen err: %v\n", err)
-		}
-	}()
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-
-	fmt.Println("shutting down server...")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal("server forced to shutdown: ", err)
-	}
-
-	fmt.Println("server exited")
+	r.StartHttp("category")
 }
