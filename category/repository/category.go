@@ -83,6 +83,9 @@ func (c *categoryRepository) FindByID(id string) (*model.Category, error) {
 		return nil, err
 	}
 
+	host := os.Getenv("CATEGORY_SERVICE_URL")
+	category.Href = utils.Href(host, category.Type, category.ID)
+
 	return &category, nil
 }
 

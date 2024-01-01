@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 
 	"net/http"
 	"os"
@@ -12,7 +13,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sing3demons/category/repository"
+	"github.com/sing3demons/category/service"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -108,4 +112,31 @@ func (router *HttpServer) StartHttp(serviceName string) {
 	}
 
 	log.Info("server exiting")
+}
+
+func (router *HttpServer) StartGRPC(repo repository.CategoryRepository) {
+	s := grpc.NewServer()
+	port := os.Getenv("GRPC_PORT")
+	hostName, _ := os.Hostname()
+
+	go func() {
+		lis, err := net.Listen("tcp", ":"+port)
+		if err != nil {
+			log.Fatalf("failed to listen: %v", err)
+		}
+		// evans --proto=./category.proto -p=50051
+		service.RegisterCategoryServiceServer(s, service.NewCategoriesService(repo))
+		log.WithFields(log.Fields{
+			"PORT":        port,
+			"TYPE":        "GRPC",
+			"APP_NAME":    "category-server_gRPC",
+			"APP_VERSION": "1.0.0",
+			"BUILD_TIME":  buildtime,
+			"APP_COMMIT":  buildcommit,
+			"HOSTNAME":    hostName,
+		}).Info("gRPC server is running...")
+		if err := s.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
 }

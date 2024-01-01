@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"os/exec"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -12,23 +11,6 @@ import (
 	"github.com/sing3demons/category/store"
 	log "github.com/sirupsen/logrus"
 )
-
-func runCMD(cmd string, shell bool) []byte {
-	if shell {
-		out, err := exec.Command("bash", "-c", cmd).Output()
-		if err != nil {
-			log.Fatal(err)
-			panic("some error found")
-		}
-		return out
-	}
-	out, err := exec.Command(cmd).Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return out
-}
 
 func init() {
 
@@ -69,5 +51,6 @@ func main() {
 	r.GET("/category", controller.FindAll)
 	r.GET("/category/:id", controller.FindByID)
 
+	r.StartGRPC(repo)
 	r.StartHttp("category")
 }

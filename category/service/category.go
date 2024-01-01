@@ -1,11 +1,8 @@
 package service
 
 import (
-	"os"
-
 	"github.com/sing3demons/category/model"
 	"github.com/sing3demons/category/repository"
-	"github.com/sing3demons/category/utils"
 )
 
 type CategoryService interface {
@@ -36,8 +33,7 @@ func (c *categoryService) FindByID(id string) (*model.Category, error) {
 		return nil, err
 	}
 
-	host := os.Getenv("CATEGORY_SERVICE_URL")
-	category.Href = utils.Href(host, category.Type, category.ID)
-
-	return c.repository.FindByID(id)
+	return category, nil
 }
+
+

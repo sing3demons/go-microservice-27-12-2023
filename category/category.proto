@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package service;
+
+option go_package = "./service";
+
+service CategoryService {
+    rpc GetCategory (CategoryRequest) returns (CategoryResponse);
+}
+
+message CategoryResponse {
+    string type = 1;
+    string id = 2;
+    string href = 3;
+    string name = 4;
+    string version = 5;
+    string lastUpdate = 6;
+    string lifecycleStatus = 7;
+}
+
+message CategoryRequest {
+    string id = 1;
+}
+
