@@ -17,6 +17,8 @@ import (
 	"github.com/sing3demons/product/logger"
 	"github.com/sing3demons/product/repository"
 	"github.com/sing3demons/product/service"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func init() {
@@ -54,9 +56,17 @@ func main() {
 	// }
 	// defer producer.Close()
 
+	cc, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		panic(err)
+	}
+	defer cc.Close()
+	categoryClient := service.NewCategoryServiceClient(cc)
+	categoryService := service.NewCategoryService(categoryClient)
+
 	col := connect.Database("products").Collection("products")
 	productRepository := repository.NewProducts(col)
-	productService := service.NewProductService(productRepository)
+	productService := service.NewProductService(productRepository, categoryService)
 	productHandler := handler.NewProductHandler(productService)
 
 	r := gin.Default()

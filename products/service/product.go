@@ -17,11 +17,12 @@ type ProductService interface {
 }
 
 type productService struct {
-	repository repository.ProductRepository
+	repository      repository.ProductRepository
+	categoryService CategoryService
 }
 
-func NewProductService(repository repository.ProductRepository) ProductService {
-	return &productService{repository}
+func NewProductService(repository repository.ProductRepository, categoryService CategoryService) ProductService {
+	return &productService{repository, categoryService}
 }
 
 func (svc *productService) FindAll(doc map[string]any) ([]model.Products, int64, error) {
@@ -58,8 +59,24 @@ func (svc *productService) FindOne(id string) (*model.Products, error) {
 		return nil, err
 	}
 
+	// if len(product.Category) != 0 {
+	// 	product.Category = svc.GetCategory(product.Category)
+	// }
+	// if len(product.Category) != 0 {
+	// 	result := []model.Category{}
+	// 	for _, category := range product.Category {
+	// 		r, err := svc.categoryService.GetCategory(category.ID)
+	// 		if err != nil {
+	// 			r = &category
+	// 		}
+	// 		result = append(result, *r)
+	// 	}
+
+	// 	product.Category = result
+	// }
+
 	if len(product.Category) != 0 {
-		product.Category = svc.GetCategory(product.Category)
+		product.Category = svc.GetCategoryGrpc(product.Category)
 	}
 
 	if len(product.SupportingLanguage) != 0 {
@@ -67,6 +84,26 @@ func (svc *productService) FindOne(id string) (*model.Products, error) {
 	}
 
 	return product, nil
+}
+
+func (svc *productService) GetCategoryGrpc(categories []model.Category) []model.Category {
+	var wg sync.WaitGroup
+	var newCategories []model.Category
+	for _, category := range categories {
+		wg.Add(1)
+		go func(category model.Category) {
+			defer wg.Done()
+			c, err := svc.categoryService.GetCategory(category.ID)
+			if err != nil {
+				category.Type = "category"
+				newCategories = append(newCategories, category)
+				return
+			}
+			newCategories = append(newCategories, *c)
+		}(category)
+	}
+	wg.Wait()
+	return newCategories
 }
 
 func (svc *productService) FindProductLanguage(id, languageCode string) (*model.ProductLanguage, error) {
