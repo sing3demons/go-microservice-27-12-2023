@@ -122,7 +122,16 @@ func (router *HttpServer) StartGRPC(repo repository.CategoryRepository) {
 	go func() {
 		lis, err := net.Listen("tcp", ":"+port)
 		if err != nil {
-			log.Fatalf("failed to listen: %v", err)
+			log.WithFields(log.Fields{
+				"PORT":        port,
+				"TYPE":        "GRPC",
+				"APP_NAME":    "category-server_gRPC",
+				"APP_VERSION": "1.0.0",
+				"BUILD_TIME":  buildtime,
+				"APP_COMMIT":  buildcommit,
+				"HOSTNAME":    hostName,
+				"ERROR":       err,
+			}).Error("failed to listen")
 		}
 		// evans --proto=./category.proto -p=50051
 		service.RegisterCategoryServiceServer(s, service.NewCategoriesService(repo))
