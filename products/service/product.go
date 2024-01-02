@@ -34,7 +34,8 @@ func (svc *productService) FindAll(doc map[string]any) ([]model.Products, int64,
 	if doc["language"] == true {
 		for i := 0; i < len(products); i++ {
 			if len(products[i].Category) != 0 {
-				products[i].Category = svc.GetCategory(products[i].Category)
+				// products[i].Category = svc.GetCategory(products[i].Category)
+				products[i].Category = svc.GetCategoryGrpc(products[i].Category)
 			}
 
 			if len(products[i].SupportingLanguage) != 0 {
@@ -43,7 +44,8 @@ func (svc *productService) FindAll(doc map[string]any) ([]model.Products, int64,
 		}
 	} else {
 		for index := 0; index < len(products); index++ {
-			products[index].Category = svc.GetCategory(products[index].Category)
+			// products[index].Category = svc.GetCategory(products[index].Category)
+			products[index].Category = svc.GetCategoryGrpc(products[index].Category)
 			products[index].SupportingLanguage = svc.GetProductLanguage(products[index].SupportingLanguage)
 		}
 	}

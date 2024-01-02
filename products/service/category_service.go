@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/sing3demons/product/model"
 )
@@ -28,8 +27,6 @@ func (s *categoryService) GetCategory(id string) (*model.Category, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Printf("Response: %v\n", res)
 
 	result := &model.Category{
 		Name:       res.Name,
